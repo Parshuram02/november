@@ -148,30 +148,49 @@ let stickers = [];
 window.stickers = stickers;
 
 class Sticker {
-    constructor(emoji, x, y, size = 60) {
-        this.emoji = emoji;
+    constructor(content, x, y, size = 100, isImage = false) {
+        this.content = content;
         this.x = x;
         this.y = y;
         this.size = size;
+        this.isImage = isImage;
+
+        if (isImage) {
+            this.img = new Image();
+            this.img.src = content;
+        }
     }
 
     draw() {
-        ctx.font = `${this.size}px serif`;
-        ctx.fillText(this.emoji, this.x, this.y);
+        if (this.isImage) {
+            ctx.drawImage(
+                this.img,
+                this.x - this.size / 2,
+                this.y - this.size / 2,
+                this.size,
+                this.size
+            );
+        } else {
+            ctx.font = `${this.size}px serif`;
+            ctx.fillText(this.content, this.x, this.y);
+        }
     }
 
     contains(mx, my) {
-        let h = this.size;
-        let half = this.size / 2;
-
         return (
-            mx >= this.x - half &&
-            mx <= this.x + half &&
-            my >= this.y - h &&
-            my <= this.y
+            mx >= this.x - this.size / 2 &&
+            mx <= this.x + this.size / 2 &&
+            my >= this.y - this.size / 2 &&
+            my <= this.y + this.size / 2
         );
     }
+
+    resize(amount) {
+        this.size = Math.min(Math.max(this.size + amount, 20), 400); 
+        drawMeme();
+    }
 }
+
 
 document.querySelectorAll(".sticker-item").forEach(item => {
     item.addEventListener("click", () => {
