@@ -54,3 +54,28 @@ function isInsideText(obj, x, y) {
         y <= obj.y
     );
 }
+canvas.addEventListener("wheel", (e) => {
+    if (!activeObj) return;
+
+    e.preventDefault();
+    
+    const delta = e.deltaY < 0 ? 5 : -5; // scroll up increases size
+    if (activeObj instanceof Sticker) {
+        activeObj.resize(delta);
+    }
+});
+
+canvas.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+
+    const { x, y } = getPosition(e);
+
+    // check for sticker
+    for (let i = stickers.length - 1; i >= 0; i--) {
+        if (stickers[i].contains(x, y)) {
+            stickers.splice(i, 1);
+            drawMeme();
+            return;
+        }
+    }
+});
