@@ -1,15 +1,19 @@
-// dragManager.js handles moving text around the canvas
-
 let isDragging = false;
 let activeObj = null;
 
 canvas.addEventListener("mousedown", (e) => {
     const { x, y } = getPosition(e);
 
-    // check if clicked on text
     window.textObjects.forEach(obj => {
         if (isInsideText(obj, x, y)) {
             activeObj = obj;
+            isDragging = true;
+        }
+    });
+
+    window.stickers.forEach(s => {
+        if (s.contains(x, y)) {
+            activeObj = s;
             isDragging = true;
         }
     });
@@ -20,7 +24,6 @@ canvas.addEventListener("mousemove", (e) => {
 
     const { x, y } = getPosition(e);
 
-    // Move text to new position
     activeObj.x = x;
     activeObj.y = y;
 
@@ -32,11 +35,6 @@ canvas.addEventListener("mouseup", () => {
     activeObj = null;
 });
 
-
-// ============================
-// HELPERS
-// ============================
-
 function getPosition(e) {
     const rect = canvas.getBoundingClientRect();
     return {
@@ -45,7 +43,6 @@ function getPosition(e) {
     };
 }
 
-// Detect if mouse is on text
 function isInsideText(obj, x, y) {
     const width = obj.text.length * obj.size * 0.6;
     const height = obj.size;

@@ -5,12 +5,15 @@
 const canvas = document.getElementById("meme-canvas");
 const ctx = canvas.getContext("2d");
 
-canvas.width = 600;
-canvas.height = 600;
+window.canvas = canvas;
+window.ctx = ctx;
+
+canvas.width = 800;
+canvas.height = 500;
 
 let currentImage = null;
 
-// text objects for drag support
+// text objects
 let topTextObj = {
     text: "",
     x: canvas.width / 2,
@@ -27,7 +30,6 @@ let bottomTextObj = {
     color: "#FFFFFF"
 };
 
-// allow dragManager.js to use these:
 window.textObjects = [topTextObj, bottomTextObj];
 
 
@@ -51,7 +53,7 @@ document.getElementById("image-upload").addEventListener("change", (e) => {
 
 
 // ============================
-// MAIN DRAW FUNCTION
+// DRAW FUNCTION (MAIN ENGINE)
 // ============================
 
 function drawMeme() {
@@ -59,14 +61,14 @@ function drawMeme() {
 
     if (!currentImage) return;
 
-    // apply active filter (from filters.js)
     ctx.filter = window.activeFilter;
 
-    // draw main image
     ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
 
     drawTextObject(topTextObj);
     drawTextObject(bottomTextObj);
+
+    stickers.forEach(s => s.draw());
 }
 
 
@@ -100,30 +102,16 @@ document.getElementById("bottom-text").addEventListener("input", (e) => {
     drawMeme();
 });
 
-// font size
 document.getElementById("font-size").addEventListener("input", (e) => {
     topTextObj.size = Number(e.target.value);
     bottomTextObj.size = Number(e.target.value);
     drawMeme();
 });
 
-// text color
 document.getElementById("text-color").addEventListener("input", (e) => {
     topTextObj.color = e.target.value;
     bottomTextObj.color = e.target.value;
     drawMeme();
-});
-
-
-// ============================
-// TEMPLATE CLICK HANDLER
-// ============================
-
-document.querySelectorAll(".template-img")?.forEach(img => {
-    img.addEventListener("click", () => {
-        currentImage = img;
-        drawMeme();
-    });
 });
 
 
@@ -147,7 +135,101 @@ document.getElementById("reset-btn").addEventListener("click", () => {
     window.activeFilter = "none";
     topTextObj.text = "";
     bottomTextObj.text = "";
-    
+    stickers.length = 0;
     drawMeme();
 });
 
+
+// ============================
+// STICKERS
+// ============================
+
+let stickers = [];
+window.stickers = stickers;
+
+class Sticker {
+    constructor(emoji, x, y, size = 60) {
+        this.emoji = emoji;
+        this.x = x;
+        this.y = y;
+        this.size = size;
+    }
+
+    draw() {
+        ctx.font = `${this.size}px serif`;
+        ctx.fillText(this.emoji, this.x, this.y);
+    }
+
+    contains(mx, my) {
+        let h = this.size;
+        let half = this.size / 2;
+
+        return (
+            mx >= this.x - half &&
+            mx <= this.x + half &&
+            my >= this.y - h &&
+            my <= this.y
+        );
+    }
+}
+
+document.querySelectorAll(".sticker-item").forEach(item => {
+    item.addEventListener("click", () => {
+        let st = new Sticker(item.textContent, canvas.width/2, canvas.height/2);
+        stickers.push(st);
+        drawMeme();
+    });
+});
+
+
+// ============================
+// SAVE PROJECT
+// ============================
+
+document.getElementById("save-btn").addEventListener("click", () => {
+    if (!currentImage) return alert("Upload an image first!");
+
+    const saved = {
+        image: currentImage.src,
+        topTextObj,
+        bottomTextObj,
+        stickers,
+        filter: window.activeFilter || "none"
+    };
+
+    localStorage.setItem("savedMeme", JSON.stringify(saved));
+    alert("Project saved!");
+});
+
+
+// ============================
+// LOAD PROJECT
+// ============================
+
+document.getElementById("load-btn").addEventListener("click", () => {
+    const data = localStorage.getItem("savedMeme");
+    if (!data) return alert("No saved project found!");
+
+    const project = JSON.parse(data);
+
+    const img = new Image();
+    img.src = project.image;
+
+    img.onload = () => {
+        currentImage = img;
+
+        topTextObj = project.topTextObj;
+        bottomTextObj = project.bottomTextObj;
+
+        stickers.length = 0;
+        project.stickers.forEach(s => {
+            stickers.push(new Sticker(s.emoji, s.x, s.y, s.size));
+        });
+
+        window.textObjects = [topTextObj, bottomTextObj];
+        window.stickers = stickers;
+        window.activeFilter = project.filter;
+
+        drawMeme();
+    };
+});
